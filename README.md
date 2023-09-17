@@ -1,138 +1,76 @@
-[![Build Status](https://travis-ci.org/k-tamura/easybuggy.svg?branch=master)](https://travis-ci.org/k-tamura/easybuggy)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![GitHub release](https://img.shields.io/github/release/k-tamura/easybuggy.svg)](https://github.com/k-tamura/easybuggy/releases/latest)
 
-EasyBuggy Vulnerable Web App Modified by A Security Guru :baby_symbol:
-=
+# Deployment to Kubernetes Cluster on AWS
 
-EasyBuggy is a broken web application in order to understand behavior of bugs and vulnerabilities, for example, [memory leak, deadlock, JVM crash, SQL injection and so on](https://github.com/k-tamura/easybuggy#clock4-easybuggy-can-reproduce).
+#### 1. Create Kubernetes cluster on AWS 
 
-![logo](https://raw.githubusercontent.com/wiki/k-tamura/easybuggy/images/mov_eb.gif)
+Connect to the EC2 instance we created initially and run the command
 
-:clock4: Quick Start
--
+        eksctl create cluster --name kubernetes-cluster --version 1.23 --region us-west-2 --nodegroup-name linux-nodes --node-type t2.xlarge --nodes 2
 
-    $ mvn clean install
+![k8s](Picture1.png)
 
-( or ``` java -jar easybuggy.jar ``` or deploy ROOT.war on your servlet container with [the JVM options](https://github.com/k-tamura/easybuggy/blob/master/pom.xml#L204). )
+![k8s](Picture2.png)
 
-Access to
+#### 2. Add Kubelogin to Jenkins
 
-    http://localhost:8080
+i. On EC2 instance execute
+        
+        cat  /home/ec2-user/.kube/config
 
-:clock4: Quick Start(Docker)
--
+![config](Picture3.png)
 
-    $ docker build . -t easybuggy:local # Build container image
-    $ docker run -p 8080:8080 easybuggy:local # Start easybuggy
+Copy the contents and save in the project directory as file.
 
-Access to
+ii. Add credentials on Jenkins
 
-    http://localhost:8080
+Jenkins Dashboard -> Manage Jenkins -> credentials -> Stores -> scoped to Jenkins -> System -> Global credentials -> Add credentials
 
-### To stop:
+![kube](Picture4.png)
 
-  Use <kbd>CTRL</kbd>+<kbd>C</kbd> ( or access to: http://localhost:8080/exit )
+#### 3. Add Deployment stage in jenkins pipeline
 
-:clock4: For more detail
--
-   
-See [the wiki page](https://github.com/k-tamura/easybuggy/wiki).
+![jenkinsfile](Picture5.png)
 
-:clock4: Demo
--
+#### 4. Create devsecops namespace using the command on EC2 Connect
 
-This demo shows: Start up -> Infinite Loop -> LDAP Injection -> UnsatisfiedLinkError -> BufferOverflowException -> Deadlock -> Memory Leak -> JVM Crash (Shut down)
+        kubectl create namespace devsecops
 
-![demo](https://github.com/k-tamura/easybuggy/blob/master/demo_eb.gif)
 
-:clock4: EasyBuggy can reproduce:
--
 
-* Troubles
+![ns](Picture6.png)
 
-  * Memory Leak (Java heap space)
-  * Memory Leak (PermGen space)
-  * Memory Leak (C heap space)
-  * Deadlock (Java)
-  * Deadlock (SQL)
-  * Endless Waiting Process
-  * Infinite Loop
-  * Redirect Loop
-  * Forward Loop
-  * JVM Crash
-  * Network Socket Leak
-  * Database Connection Leak
-  * File Descriptor Leak 
-  * Thread Leak 
-  * Mojibake
-  * Integer Overflow
-  * Round Off Error
-  * Truncation Error
-  * Loss of Trailing Digits
 
-* Vulnerabilities
+#### 5. Create deployment file in the repo.
 
-  * XSS (Cross-Site Scripting)
-  * SQL Injection
-  * LDAP Injection
-  * Code Injection
-  * OS Command Injection (OGNL Expression Injection)
-  * Mail Header Injection
-  * Null Byte Injection
-  * Extension Unrestricted File Upload
-  * Size Unrestricted File Upload
-  * Open Redirect
-  * Brute-force Attack
-  * Session Fixation Attacks
-  * Verbose Login Error Messages
-  * Dangerous File Inclusion
-  * Directory Traversal
-  * Unintended File Disclosure
-  * CSRF (Cross-Site Request Forgery)
-  * XEE (XML Entity Expansion)
-  * XXE (XML eXternal Entity)
-  * Clickjacking
+#### 6. Create Jenkins job and configure
 
-* Performance Degradation
+#### 7. Run the job
 
-  * Slow Regular Expression Parsing
-  * Delay of creating string due to +(plus) operator
-  * Delay due to unnecessary object creation
+![deployed](Picture7.png)
 
-* Errors
+#### 8. Validate on EC2 Connect
 
-  * AssertionError
-  * ExceptionInInitializerError
-  * FactoryConfigurationError
-  * GenericSignatureFormatError
-  * NoClassDefFoundError
-  * OutOfMemoryError (Java heap space) 
-  * OutOfMemoryError (Requested array size exceeds VM limit)
-  * OutOfMemoryError (unable to create new native thread)
-  * OutOfMemoryError (GC overhead limit exceeded)
-  * OutOfMemoryError (PermGen space)
-  * OutOfMemoryError (Direct buffer memory)
-  * StackOverflowError
-  * TransformerFactoryConfigurationError
-  * UnsatisfiedLinkError
 
-:clock4: EasyBuggy clones:
--
-* [EasyBuggy Boot](https://github.com/k-tamura/easybuggy4sb)
+        kubectl get namespace
+        kubectl get deployment -n devsecops
+        kubectl get svc -n devsecops
+        kubectl get pods -n devsecops
 
-  EasyBuggy clone build on Spring Boot
 
-  ![logo](https://raw.githubusercontent.com/wiki/k-tamura/easybuggy/images/mov_ebsb.gif)
+![Validate](Picture8.png)
 
-* [EasyBuggy Bootlin](https://github.com/k-tamura/easybuggy4kt)
+#### 9. Access the deployed app on browser
 
-  EasyBuggy clone build on Spring Boot and written in Kotlin
 
-  ![logo](https://raw.githubusercontent.com/wiki/k-tamura/easybuggy/images/mov_ebkt.gif)
+        NAME        TYPE           CLUSTER-IP      EXTERNAL-IP                                                               PORT(S)        AGE
+        easybuggy   LoadBalancer   10.100.45.167   a931abf8b30814ab98906b7cf3051311-1499731652.us-west-2.elb.amazonaws.com   80:30470/TCP   109s
 
-* [EasyBuggy Django](https://github.com/k-tamura/easybuggy4django)
 
-  EasyBuggy clone build on Django 2 and written in Python
+In the browser access http://a931abf8b30814ab98906b7cf3051311-1499731652.us-west-2.elb.amazonaws.com:80
 
-  　![logo](https://github.com/k-tamura/easybuggy4django/blob/master/static/easybuggy.png)
+
+![page](Picture9.png)
+
+
+
+
